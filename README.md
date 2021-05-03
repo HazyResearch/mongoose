@@ -3,7 +3,7 @@
 > **MONGOOSE: A Learnable LSH Framework for Efficient Neural Network Training**\
 > Beidi Chen, Zichang Liu, Binghui Peng, Zhaozhuo Xu, Jonathan Lingjie Li, Tri Dao, Zhao Song, Anshumali Shrivastava, Christopher Ré\
 > Stanford University, Rice University, Columbia University, Princeton University\
-> Paper: https://openreview.net/pdf?id=wWK7yXkULyh \
+> Paper: https://openreview.net/pdf?id=wWK7yXkULyh
 
 
 
