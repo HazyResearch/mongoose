@@ -701,7 +701,7 @@ class LSHSelfAttention(nn.Module):
                  random_rotations_per_head=False, attend_across_buckets=True, allow_duplicate_attention=True,
                  num_mem_kv=0, one_value_head=False, use_full_attn=False, full_attn_thres=None, return_attn=False,
                  post_attn_dropout=0., dropout=0., n_local_attn_heads=0, attn_type='lsh', max_seq_len=None,
-                 alpha=1.0, triplet_chunks=None, **kwargs):
+                 alpha=1.0, triplet_chunks=None, scheduler_hashes=10, thresh=0.01, **kwargs):
         super().__init__()
         assert dim_head or (dim % heads) == 0, 'dimensions must be divisible by number of heads'
         assert n_local_attn_heads < heads, 'local attention heads must be less than number of heads'
@@ -732,10 +732,7 @@ class LSHSelfAttention(nn.Module):
                                                 allow_duplicate_attention=allow_duplicate_attention,
                                                 return_attn=return_attn, triplet_chunks=triplet_chunks, **kwargs)
             # init scheduler
-            K = 1
-            L = 10
-            thresh = 0.1
-            self.scheduler = Scheduler(self.toqk.weight, dim, K, L, thresh)
+            self.scheduler = Scheduler(self.toqk.weight, dim, scheduler_hashes, 1, thresh)
 
         else:
             self.lsh_attn = LSHAttention(bucket_size=bucket_size, n_hashes=n_hashes, causal=causal,
@@ -767,19 +764,6 @@ class LSHSelfAttention(nn.Module):
         xavier_uniform_(self.toqk.weight)
         xavier_uniform_(self.tov.weight)
         xavier_uniform_(self.to_out.weight)
-        # else:
-        #     xavier_uniform_(self.q_proj_weight)
-        #     xavier_uniform_(self.k_proj_weight)
-        #     xavier_uniform_(self.v_proj_weight)
-
-        # if self.in_proj_bias is not None:
-        # constant_(self.toqk.bias, 0.)
-        # constant_(self.tov.bias, 0.)
-        # constant_(self.to_out.bias, 0.)
-        # if self.bias_k is not None:
-        #     xavier_normal_(self.bias_k)
-        # if self.bias_v is not None:
-        #     xavier_normal_(self.bias_v)
 
     def forward(self, x, keys=None, input_mask=None, input_attn_mask=None, context_mask=None, calc_triplet=False,
                 **kwargs):
@@ -834,9 +818,9 @@ class LSHSelfAttention(nn.Module):
         attn_fn = self.lsh_attn if not use_full_attn else self.full_attn
 
         # update rotations
-        # if calc_triplet:
-        #     if not self.scheduler.detect_change(self.toqk.weight):
-        #         calc_triplet = False
+        if calc_triplet:
+            if not self.scheduler.detect_change(self.toqk.weight):
+                calc_triplet = False
         return_triplet_examples = (self.attn_type in ['triplet', 'simhash']) and calc_triplet and not use_full_attn
         partial_attn_fn = partial(attn_fn, query_len=t, input_mask=input_mask,
                                   triplet_examples=return_triplet_examples)
@@ -962,7 +946,7 @@ class Reformer_tune(nn.Module):
                  lsh_allow_duplicate_attention=True, random_rotations_per_head=False, twin_attention=False,
                  use_scale_norm=False, use_rezero=False, use_full_attn=False, full_attn_thres=0, reverse_thres=0,
                  num_mem_kv=0, one_value_head=False, n_local_attn_heads=0, pkm_layers=tuple(), pkm_num_keys=128,
-                 attn_type_list=[], store_stats=False):
+                 attn_type_list=[], store_stats=False, scheduler_hashes=10, thresh=0.01):
         super().__init__()
         self.dim = dim
         self.depth = depth
@@ -993,7 +977,7 @@ class Reformer_tune(nn.Module):
                                                 use_full_attn=use_full_attn, full_attn_thres=full_attn_thres,
                                                 one_value_head=one_value_head, n_local_attn_heads=n_local_attn_heads,
                                                 max_seq_len=max_seq_len, attn_type=attn_type_list[0],
-                                                store_stats=store_stats)
+                                                store_stats=store_stats, scheduler_hashes=scheduler_hashes, thresh=thresh)
             get_attn, get_ff, get_pkm = map(cache_fn, (get_attn, get_ff, get_pkm))
 
         blocks = []
@@ -1016,7 +1000,8 @@ class Reformer_tune(nn.Module):
                                     random_rotations_per_head=random_rotations_per_head, num_mem_kv=num_mem_kv,
                                     use_full_attn=use_full_attn, full_attn_thres=full_attn_thres,
                                     one_value_head=one_value_head, n_local_attn_heads=n_local_attn_heads,
-                                    max_seq_len=max_seq_len, attn_type=attn_type_list[ind], store_stats=store_stats)
+                                    max_seq_len=max_seq_len, attn_type=attn_type_list[ind], store_stats=store_stats
+                                    , scheduler_hashes=scheduler_hashes, thresh=thresh)
 
             if use_pkm:
                 parallel_net = get_pkm()
@@ -1122,7 +1107,7 @@ class ReformerLM_tune(nn.Module):
                  use_full_attn=False, full_attn_thres=0, reverse_thres=0, num_mem_kv=0, one_value_head=False,
                  emb_dim=None, return_embeddings=False, weight_tie_embedding=False, fixed_position_emb=False,
                  absolute_position_emb=False, axial_position_shape=None, n_local_attn_heads=0, pkm_layers=tuple(),
-                 pkm_num_keys=128, attn_type_list=[], store_stats=False):
+                 pkm_num_keys=128, attn_type_list=[], store_stats=False, scheduler_hashes=10, thresh=0.01):
         super().__init__()
         emb_dim = default(emb_dim, dim)
         self.max_seq_len = max_seq_len
@@ -1155,7 +1140,7 @@ class ReformerLM_tune(nn.Module):
                                       num_mem_kv=num_mem_kv,
                                       one_value_head=one_value_head, n_local_attn_heads=n_local_attn_heads,
                                       pkm_layers=pkm_layers, pkm_num_keys=pkm_num_keys, attn_type_list=attn_type_list,
-                                      store_stats=store_stats)
+                                      store_stats=store_stats, scheduler_hashes=scheduler_hashes, thresh=thresh)
 
         if return_embeddings:
             self.out = Identity()

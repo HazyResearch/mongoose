@@ -2,10 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-import math
 import numpy as np
-from mongoose.slide_lib.simHash import SimHash
-from mongoose.slide_lib.lsh import LSH
+from mongoose_slide.slide_lib.simHash import SimHash
+from mongoose_slide.slide_lib.lsh import LSH
 import time
 
 use_cuda = torch.cuda.is_available()

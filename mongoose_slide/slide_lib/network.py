@@ -5,8 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.utils.data import Dataset
-from mongoose.slide_lib.simHash import SimHash
-from mongoose.slide_lib.lsh import LSH
+from mongoose_slide.slide_lib.simHash import SimHash
+from mongoose_slide.slide_lib.lsh import LSH
 
 
 use_cuda = torch.cuda.is_available()

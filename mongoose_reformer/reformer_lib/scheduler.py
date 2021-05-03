@@ -1,5 +1,5 @@
 import torch
-from mongoose.slide_lib.simHash import SimHash
+from mongoose_slide.slide_lib.simHash import SimHash
 
 
 class Scheduler:

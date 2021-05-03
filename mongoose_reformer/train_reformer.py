@@ -8,7 +8,6 @@ import os
 
 from reformer_lib.reformer_pytorch import ReformerLM,ReformerLM_tune
 from reformer_lib.generative_tools import TrainingWrapper
-from scheduler import Scheduler
 from torch.utils.tensorboard import SummaryWriter
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -41,7 +40,7 @@ parser.add_argument('--nlayers', type=int, default=2)
 parser.add_argument('--nhead', type=int, default=4)
 parser.add_argument('--bucket_size_list', nargs='+', type=int, default=[64, 64])
 parser.add_argument('--n_hashes_list', nargs='+', type=int, default=[1, 1])
-parser.add_argument('--attn_type_list', nargs='+', default=['lsh', 'lsh'])
+parser.add_argument('--attn_type_list', nargs='+', default=['triplet', 'triplet'])
 parser.add_argument('--dropout', type=float, default=0.05)
 parser.add_argument('--batch_size', type=int, default=16)
 parser.add_argument('--full_attn_thres', type=int, default=0)
@@ -55,8 +54,8 @@ parser.add_argument('--train_batches', type=int, default=5000)
 parser.add_argument('--eval_batches', type=int, default=500)
 parser.add_argument('--print_loss', type=int, default=500)
 parser.add_argument('--note', type=str, default='')
-parser.add_argument('--K', type=int, default=1)
-parser.add_argument('--L', type=int, default=10)
+parser.add_argument('--scheduler_hashes', type=int, default=10)
+parser.add_argument('--thresh', type=float, default=0.01)
 parser.add_argument('--local_rank', type=int, default=0)
 
 

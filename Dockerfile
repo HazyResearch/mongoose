@@ -6,5 +6,4 @@ RUN pip install pynvrtc
 RUN pip install Cython
 RUN pip install torch-scatter==latest+cu102 -f https://pytorch-geometric.com/whl/torch-1.5.0.html
 RUN pip install local-attention product-key-memory axial-positional-embedding==0.1.0
-COPY mongoose/lsh_lib lsh-lib
-RUN cd lsh-lib && python setup.py install
+RUN cd lsh_lib && python setup.py install

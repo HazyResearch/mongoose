@@ -1,10 +1,7 @@
 
 import torch
-from mongoose.slide_lib.cupy_kernel import cupyKernel
+from mongoose_slide.slide_lib.cupy_kernel import cupyKernel
 import numpy as np
-from pdb import set_trace
-
-import os
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
