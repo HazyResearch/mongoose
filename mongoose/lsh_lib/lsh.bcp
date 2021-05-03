@@ -1,0 +1,56 @@
+import collections
+import os
+import sys
+import math
+import random
+import numpy as np
+import numpy.random
+import scipy as sp
+import scipy.stats
+
+from clsh import pyLSH
+import torch
+
+class LSH:
+    def __init__(self, func_, K_, L_, threads_=8):
+        self.func = func_
+        self.K = K_
+        self.L = L_
+        self.lsh_ = pyLSH(self.K, self.L, threads_)
+
+        self.sample_size = 0
+        self.count = 0
+
+    def stats(self):
+        avg_size = self.sample_size / max(self.count, 1)
+        print("Build", avg_size)
+        self.sample_size = 0
+        self.count = 0
+
+    def remove_insert(self, item_id, old_item, new_item):
+        old_fp = self.func.hash(old_item).int().cpu().numpy()
+        self.lsh_.remove(np.squeeze(old_fp), item_id)
+
+        new_fp = self.func.hash(new_item).int().cpu().numpy()
+        self.lsh_.insert(np.squeeze(new_fp), item_id)
+
+    def insert(self, item_id, item):
+        fp = self.func.hash(item).int().cpu().numpy()
+        self.lsh_.insert(np.squeeze(fp), item_id)
+
+    def insert_multi(self, items, N):
+        fp = self.func.hash(items).int().cpu().numpy()
+        self.lsh_.insert_multi(fp, N)
+
+    def query(self, item):
+        fp = self.func.hash(item).int().cpu().numpy()
+        return self.lsh_.query(np.squeeze(fp))
+
+    def query_multi_mask(self, item, M, N):
+        fp = self.func.hash(item).int().cpu().numpy()
+        mask = torch.zeros(M, N, dtype=torch.float32)
+        self.lsh_.query_multi_mask(fp, mask.numpy(), M, N)
+        return mask.cuda()
+
+    def clear(self):
+        self.lsh_.clear()
