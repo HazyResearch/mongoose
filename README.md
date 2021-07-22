@@ -30,6 +30,10 @@ For simplicity, please refer to the our Dockerfile with all environments install
 ```
 docker build -f Dockerfile .
 ```
+or pull it with:
+```
+docker pull beidichen1993/mongoose:latest
+```
 
 ## Experiments
 MONGOOSE is built on top of two existing frameworks: SLIDE and Reformer.
